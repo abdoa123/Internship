@@ -1,0 +1,492 @@
+﻿@{
+    ViewBag.Title = "Units";
+}
+
+<div class="btn btn-light" style="margin:1%;">
+    <a href="/Departments">Department</a>
+</div>
+
+<div class="btn btn-light" style="margin:1%;">
+    <a href="/Employees">Employees</a>
+</div>
+
+@(Html.Kendo().Grid<RepositoryDP.Model.Units>()
+        .Name("grid")
+        .Columns(columns =>
+        {
+            columns.Bound(unit => unit.unitName).Title("Unit Name");
+            columns.Bound(unit => unit.unitCode).Title("Unit Code");
+            columns.Bound(unit => unit.departmentName).Title("Department Name");
+            columns.Command(command =>
+            {
+                command.Custom("Delete").Click("deleteUnitBTN");
+                command.Custom("Edit").Click("openFN");
+                command.Custom("View").Click("viewUnitBTN");
+            });
+        })
+        .ToolBar(toolbar =>
+        {
+            toolbar.Custom().Name("add new one").Text("Add new one").HtmlAttributes(new { id = "open" });
+        })
+        .Pageable()
+        .Sortable()
+        .Groupable()
+        .DataSource(dataSource => dataSource
+        .Ajax()
+        .PageSize(4)
+        .Model(model =>
+        {
+            model.Id(unit => unit.unitId);
+            model.Field(unit => unit.unitId).Editable(false);
+        })
+        .Read(read => read.Action("getData", "Units"))
+    )
+)
+
+@(Html.Kendo().Window()
+.Name("addUnit")
+.Width(720)
+.Height(480)
+.Visible(false)
+.Resizable()
+.Draggable()
+.Title("Add Unit")
+.Content(@<text>
+        <form id="add-form">
+            <div class="form-group">
+                <label>Unit Name</label>
+                @(Html.Kendo().TextBox()
+                      .Name("unitName")
+                      .HtmlAttributes(new { @class = "form-control", placeholder = "Unit Name" })
+                )
+
+            </div>
+            <div class="form-group">
+                <label>Unit Code</label>
+                @(Html.Kendo().TextBox()
+                      .Name("unitCode")
+                      .HtmlAttributes(new { @class = "form-control", placeholder = "Unit Code" })
+                )
+            </div>
+
+            <div class="form-group">
+                <label>Department Name</label>
+                @(Html.Kendo().DropDownList()
+                      .Name("department")
+                      .DataTextField("departmentName")
+                      .DataValueField("depId")
+                      .HtmlAttributes(new { style = "width: 100%" })
+                      .DataSource(source =>
+                      {
+                          source.Read(read =>
+                          {
+                              read.Action("getDepartments", "Units");
+                          });
+                      })
+                )
+            </div>
+
+            <div class="form-group">
+                <label>Add jobs</label>
+                @(Html.Kendo().Grid<RepositoryDP.Model.Jobs>
+                    ()
+                    .Name("addJobs")
+                    .Columns(columns =>
+                    {
+                        columns.Bound(j => j.jobTitle).Title("Job Title");
+                    })
+                    .ToolBar(toolBar =>
+                    {
+                        toolBar.Create();
+                        // toolBar.Custom().Text("Save Changes").Name("add-new-job").HtmlAttributes(new { id = "addJob" });
+                    })
+                    .Editable(editable => editable.Mode(GridEditMode.InCell))
+                    .Pageable()
+                    .Sortable()
+                    .Scrollable()
+                    .HtmlAttributes(new { style = "height:360px;" })
+                    .DataSource(dataSource => dataSource
+                    .Ajax()
+                    .ServerOperation(false)
+                    .Model(model =>
+                    {
+                        model.Id(j => j.jobId);
+                        model.Field(j => j.jobId).Editable(false);
+                        model.Field(j => j.jobTitle);
+                    })
+                    .PageSize(5)
+                    //.Read(read => read.Action("getData", "Units"))
+                    )
+                )
+            </div>
+            <input type="hidden" value="0" id="hiddenId" />
+            <input class="btn btn-primary" type="submit" value="submit" id="add" />
+        </form>
+</text>)
+     .Actions(actions => actions.Close())
+)
+
+@* ******************** view details ******************** *@
+@(Html.Kendo().Window().Name("Details")
+.Title("Unit Details")
+.Visible(false)
+.Modal(true)
+.Draggable(true)
+.Width(300)
+)
+
+<script type="text/x-kendo-template" id="template">
+    <div id="details-container">
+        <h2>Unit Name: #=unitName#</h2>
+        <h4>Unit Code: #=unitCode #</h4>
+        <dl>
+            <dt>Deparment Name: #= departmentName #</dt>
+            @*<dt> Jobs: #= jobTitle #</dt>*@
+
+        </dl>
+    </div>
+</script>
+@* ******************************************************** *@
+<script>
+    /* validation variables */
+    var unitCode = false;
+    var unitName = false;
+    /* =================== */
+
+    /* To Open PopUp For Unit */
+    $("#open").click(openFN);
+
+    function saveFunction(e) {
+        e.preventDefault();
+        var data = this.dataItem($(e.currentTarget).closest("tr"));
+        console.log(data);
+    }
+
+    function openFN(e) {
+        e.preventDefault();
+        try {
+            if (this.dataItem($(e.currentTarget).closest("tr")) != null) {
+                unitCode = true;
+                unitName = true;
+                $("unitName").addClass('valid').removeClass('invalid');
+                $("unitCode").addClass('valid').removeClass('invalid');
+                var data = this.dataItem($(e.currentTarget).closest("tr"));
+                $("#unitName").val(data.unitName);
+                $("#unitCode").val(data.unitCode);
+                $('#hiddenId').val(data.unitId);
+                console.log(data.unitId);
+                $.ajax({
+                    url: "Units/getJobs",
+                    type: "POST",
+                    data: {
+                        unitId: $('#hiddenId').val()
+                    },
+                    success: function (result) {
+                        $("#addJobs").data('kendoGrid').dataSource.data(result.Message)
+                    },
+                    error: function () {
+                        alert("Error while get  jobs data");
+                    }
+                })
+            }
+        }
+        catch (err) {
+            unitName = false;
+            unitCode = false;
+            $("unitName").addClass('invalid').removeClass('valid');
+            $("unitCode").addClass('invalid').removeClass('valid');
+            $("#unitName").val('');
+            $("#unitCode").val('');
+            $('#hiddenId').val('0');
+            $("#addJobs").data('kendoGrid').dataSource.data([]);
+            $.ajax({
+                url: "/Units/getMaxId",
+                type: "POST",
+                success: function (result) {
+                    //$("#grid").data("kendoGrid").dataSource.read();
+                    console.log(`New Id = ${parseInt(result.Message) + 1}`)
+                    $('#hiddenId').val(parseInt(result.Message) + 1);
+                },
+                error: function () {
+                    alert("Error while get max id data");
+                }
+            })
+        }
+        finally {
+            $("#addUnit").parent().css('width', "50%");
+            $("#addUnit").parent().css('height', "Auto");
+            $("#addUnit").data("kendoWindow").center().open();
+        }
+    };
+
+    var displayedDataAsJSON;
+    var dispayedDataInJSON;
+    var savedJobs = [];
+    //$("#addJob").click((event) => {
+    //    event.preventDefault();
+    //    var displayedData = $("#addJobs").data().kendoGrid.dataSource.view();
+    //    displayedDataAsJSON = JSON.stringify(displayedData);
+    //    dispayedDataInJSON = JSON.parse(displayedDataAsJSON);
+    //    var re = /^[A-Z]/;
+    //    savedJobs = [];
+    //    for (var i = 0; i < dispayedDataInJSON.length; i++) {
+    //        dispayedDataInJSON[i].unitId = $('#hiddenId').val();
+    //        if (!(dispayedDataInJSON[i].jobTitle)) {
+    //            dispayedDataInJSON[i].jobTitle = "";
+    //        }
+    //        savedJobs.push(dispayedDataInJSON[i]);
+    //    }
+    //    console.log(dispayedDataInJSON);
+    //    dispayedDataInJSON = savedJobs;
+    //    console.log(dispayedDataInJSON);
+    //});
+
+    function addJob () {
+        // event.preventDefault();
+        var displayedData = $("#addJobs").data().kendoGrid.dataSource.view();
+        displayedDataAsJSON = JSON.stringify(displayedData);
+        dispayedDataInJSON = JSON.parse(displayedDataAsJSON);
+        var re = /^[A-Z]/;
+        savedJobs = [];
+        console.log(dispayedDataInJSON);
+        for (var i = 0; i < dispayedDataInJSON.length; i++) {
+            dispayedDataInJSON[i].unitId = $('#hiddenId').val();
+            if (!(dispayedDataInJSON[i].jobTitle)) {
+                dispayedDataInJSON[i].jobTitle = "";
+            }
+            savedJobs.push(dispayedDataInJSON[i]);
+        }
+        console.log(dispayedDataInJSON);
+        dispayedDataInJSON = savedJobs;
+        console.log(dispayedDataInJSON);
+    }
+
+    function checkUnitName() {
+        $('#unitName').on('input', function () {
+            var input = $(this);
+            var is_name = input.val();
+            var re = /^[A-Z]/;
+            console.log(is_name);
+            console.log(re.test(is_name));
+            if (is_name && (re.test(is_name))) { unitName = true; input.removeClass("invalid").addClass("valid"); }
+            else { input.removeClass("valid").addClass("invalid"); unitName = false; }
+        });
+    }
+
+    function checkUnitCode() {
+        $('#unitCode').on('input', function () {
+            var input = $(this);
+            var is_name = input.val();
+            var re = /^[A-Z]/;
+            console.log(is_name);
+            console.log(re.test(is_name));
+            if (is_name && (re.test(is_name))) { unitCode = true; input.removeClass("invalid").addClass("valid"); }
+            else { input.removeClass("valid").addClass("invalid"); unitCode = false; }
+        });
+    }
+
+    $(document).ready(function () {
+        checkUnitName();
+        checkUnitCode();
+    });
+
+    $(document).ready(() => {
+        checkUnitName();
+        checkUnitCode();
+
+        $("#add").click(function (event) {
+            event.preventDefault();
+            checkUnitName(); checkUnitCode();
+            var error_free = true;
+            if (!unitName || !unitCode) error_free = false;
+            else error_free = true;
+
+            if (!error_free) {
+                event.preventDefault();
+                alert("please Enter vaild Data ");
+            }
+            else {
+                // console.log(`Department Id = ${$("#department").data("kendoDropDownList").value()}`);
+                console.log(`Hidden Id = ${$("#hiddenId").val()}`);
+                $.ajax({
+                    type: "POST",
+                    url: "/Units/createUnits",
+                    data: {
+                        unitId: $('#hiddenId').val(),
+                        unitName: $("#unitName").val(),
+                        unitCode: $("#unitCode").val(),
+                        departmentId: $("#department").data("kendoDropDownList").value(),
+                    },
+                    dataType: "json",
+                    success: function (result) {
+                        addJob();
+                        console.log(dispayedDataInJSON);
+                        $("#grid").data("kendoGrid").dataSource.read();
+
+                        $('#departmentName').removeClass("valid").addClass("invalid");
+                        $('#departmentCode').removeClass("valid").addClass("invalid");
+                        ($("#addUnit").data("kendoWindow")).close();
+                        //alert(dataItem);
+                        //console.log(dataItem)
+                        $.ajax({
+                            type: "POST",
+                            url: "/Jobs/handleJobs",
+                            data: {
+                                jobs: dispayedDataInJSON
+                            },
+                            dataType: "JSON",
+                            success: function (result) {
+                                console.log(result);
+                                console.log("jobs added");
+                            },
+                            error: function (error) {
+                                console.log("add jobs faild");
+                            }
+                        })
+                    },
+                    error: (err) => {
+                        console.log(err);
+                        alert("Error in inserting data")
+                    }
+                })
+            }
+
+        })
+
+    });
+
+    /* ****************Delete Unit BTN****************** */
+    function deleteConfirm()
+    {
+        var response = confirm("Are you sure you want to delete?")
+        if (response) return true;
+        return false;
+    }
+
+    function deleteUnitBTN(event) {
+        event.preventDefault();
+        if(deleteConfirm())
+        {
+            var dataItem = this.dataItem($(event.currentTarget).closest("tr"));
+            $.ajax({
+                url: "/Units/deleteUnit",
+                type: 'POST',
+                dataType: "json",
+                data: {
+                    unitId: dataItem.unitId,
+                    unitName: dataItem.unitName,
+                    unitCode: dataItem.unitCode,
+                    departmentId: dataItem.departmentId
+                },
+                success: function (result) {
+                    $("#grid").data("kendoGrid").dataSource.read();
+                    console.log(result);
+                    alert(result.Message)
+                },
+                error: function (error) {
+                    alert("Error while deleteing data");
+                    console.log(error);
+                }
+            });
+        }
+    }
+    /* ************************************************* */
+
+    /* **************** View Unit BTN *************** */
+    var detailsTemplate = kendo.template($("#template").html());
+    function viewUnitBTN(event)
+    {
+        event.preventDefault();
+        var dataItem = this.dataItem($(event.currentTarget).closest("tr"));
+        var wnd = $("#Details").data("kendoWindow");
+
+        wnd.content(detailsTemplate(dataItem));
+        wnd.center().open();
+    }
+    /* ************************************************* */
+
+</script>
+
+<style type="text/css">
+    #details-container {
+        padding: 10px;
+    }
+
+        #details-container h2 {
+            margin: 0;
+        }
+
+        #details-container em {
+            color: #8c8c8c;
+        }
+
+        #details-container dt {
+            margin: 0;
+            display: inline;
+        }
+
+    .herfClass a {
+        background-color: purple;
+        border: none;
+        /*color: #FFFFFF;*/
+        padding: 15px 32px;
+        text-align: center;
+        -webkit-transition-duration: 0.4s;
+        transition-duration: 0.4s;
+        text-decoration: none;
+        font-size: 16px;
+        cursor: pointer;
+        display: inline-block;
+    }
+
+    .herfClass {
+        padding: 10px 35px 20px 1320px;
+    }
+
+    #Combo {
+        padding-top: 5px;
+        padding-bottom: 40px;
+    }
+
+    body {
+        background-image: url("https://images.pexels.com/photos/953214/pexels-photo-953214.jpeg?cs=srgb&dl=backgrounds-blank-blue-953214.jpg&fm=jpg");
+        background-size: cover;
+    }
+
+    #contact label {
+        display: inline-block;
+        width: 100px;
+        text-align: right;
+    }
+
+    #contact_submit {
+        padding-left: 100px;
+    }
+
+    #contact div {
+        margin-top: 1em;
+    }
+
+    textarea {
+        vertical-align: top;
+        height: 5em;
+    }
+
+    .error {
+        display: none;
+        margin-left: 10px;
+    }
+
+    .error_show {
+        color: red;
+        margin-left: 10px;
+    }
+
+    input.invalid, textarea.invalid {
+        border: 2px solid red;
+    }
+
+    input.valid, textarea.valid {
+        border: 2px solid green;
+    }
+</style>

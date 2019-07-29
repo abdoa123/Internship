@@ -1,0 +1,651 @@
+﻿@{
+    ViewBag.Title = "Employees";
+}
+
+<div class="btn btn-light" style="margin:1%;">
+    <a href="/Departments">Department</a>
+</div>
+
+<div class="btn btn-light" style="margin:1%;">
+    <a href="/Units">Units</a>
+</div>
+
+@(Html.Kendo().Grid<RepositoryDP.Model.Employees>()
+.Name("grid")
+.Columns(columns =>
+{
+    columns.Bound(c => c.firstName).Title("Name").ClientTemplate(
+                @"<div class='customer-photo'
+                    style='background-image: url(" + "#= imagePath #" + ");'></div><div class='customer-name'>#: firstName # #: lastName #</div>");
+
+    columns.Bound(c => c.phone).Title("Phone");
+    columns.Bound(c => c.jobTitle).Title("Job title");
+    columns.Command(command =>
+    {
+        command.Custom("Delete").Click("Deletefn");
+        command.Custom("Details").Click("showDetails");
+        command.Custom("Edit").Click("openFN");
+        command.Custom("Add Document").Click("addDoc");
+        command.Custom("View Document");
+    });
+
+
+})
+.ToolBar(toolbar => { toolbar.Custom().Name("add new one").Text("Add new one").HtmlAttributes(new { id = "open" }); })
+.HtmlAttributes(new { style = "height: 550px;" })
+.Groupable()
+.Sortable()
+.Pageable(pageable => pageable
+    .Refresh(true)
+    .PageSizes(true)
+    .ButtonCount(5))
+.DataSource(dataSource => dataSource
+    .Ajax()
+    .Model(model =>
+    {
+        model.Id(job => job.jobId);
+
+
+    })
+    .Read(read => read.Action("getData", "Employees"))
+
+)
+)
+@(Html.Kendo().Window()
+.Name("window")
+.Width(630)
+.Height(450)
+.Visible(false)
+.Resizable()
+.Draggable()
+.Title("Add Employee")
+.Content(@<text>
+        <form id="add-form">
+
+            <div class="form-group">
+                <label>Upload profile photo</label>
+                <div>
+                    <div class="col-md-12">
+                        <div class="card" style="width:400px">
+                            <div class="card-body" style="text-align:center;width:300px; height:300px;">
+                                <img src=@ViewBag.Photo id="displayPhoto" class="imageDisplay img-thumbnail" />
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-12">
+                        @(Html.Kendo().Upload()
+                .Name("Photo")
+                .Async(a => a
+                            .Save("Save", "Employees")
+                            .AutoUpload(true)
+
+
+                            )
+                .HtmlAttributes(new { aria_label = "files", @style = "width:300px;" })
+                .Validation(validation =>
+                {
+
+                    validation.AllowedExtensions(new string[] { ".jpg", ".jpeg", ".png", ".bmp", ".gif" });
+                    validation.MaxFileSize(5000000);
+                })
+                .Messages(m => m.Select("Select Image"))
+                .Multiple(false)
+                 .Events(events => events
+                 .Select("onSelect")
+                 .Remove("onRemove")
+                 )
+                        )
+                    </div>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>First Name</label>
+                @(Html.Kendo().TextBox()
+                      .Name("firstName")
+                      .HtmlAttributes(new { @class = "form-control", placeholder = "First Name" })
+                )
+
+            </div>
+            <div class="form-group">
+                <label>Last Name</label>
+                @(Html.Kendo().TextBox()
+                      .Name("lastName")
+                      .HtmlAttributes(new { @class = "form-control", placeholder = "Last Name" })
+                )
+            </div>
+            <div class="form-group">
+                <label>Phone</label>
+                @(Html.Kendo().TextBox()
+                      .Name("phone")
+                      .HtmlAttributes(new { @class = "form-control", placeholder = "phone" })
+                )
+            </div>
+
+            <div class="form-group">
+                <label>Job Title</label>
+                @(Html.Kendo().DropDownList()
+                      .Name("job")
+                      .DataTextField("jobTitle")
+                      .DataValueField("jobId")
+                      .HtmlAttributes(new { style = "width: 100%" })
+                      .DataSource(source =>
+                      {
+                          source.Read(read =>
+                          {
+                              read.Action("getJobs", "Employees");
+                          });
+                      })
+                )
+            </div>
+
+            <input type="hidden" value="0" id="hiddenId" />
+            <input type="hidden" value="0" id="Imgsrc" />
+            <input class="btn btn-outline-primary" type="submit" value="submit" id="add" />
+        </form>
+</text>)
+
+.Actions(actions => actions.Close())
+)
+
+@* -----------------------------------  *@
+
+@(Html.Kendo().Window().Name("Details")
+.Title("Employee Details")
+.Visible(false)
+.Modal(true)
+.Draggable(true)
+.Width(300)
+)
+
+@(Html.Kendo().Window()
+        .Name("documentWindow")
+        .Width(630)
+        .Height(480)
+        .Visible(false)
+        .Resizable()
+        .Draggable()
+        .Title("Documents")
+        .Content(@<text>
+            <div class="container">
+                <form>
+                    <div class="form-group">
+                        <input type="file" hidden="hidden" id="real-file" />
+                        @(Html.Kendo().Grid<RepositoryDP.Model.Attachments>()
+                    .Name("documentGrid")
+                    .Columns(columns =>
+                    {
+                        columns.Bound(c => c.docName).Title("Document Name");
+                        columns.Command(c =>
+                        {
+                            c.Custom("Browse").Click("browse").HtmlAttributes(new { id = "browse" });
+                        });
+                    })
+                    .HtmlAttributes(new { style = "height: 480px;", @class = "form-control" })
+                    .Groupable()
+                    .Sortable()
+                    .Pageable(pageable => pageable
+                        .Refresh(true)
+                        .PageSizes(true)
+                        .ButtonCount(5))
+                    .DataSource(dataSource => dataSource
+                        .Ajax()
+                        .Model(model =>
+                        {
+                            model.Id(doc => doc.docId);
+                            model.Field(doc => doc.docId).Editable(false);
+                        })
+                        .Read(read => read.Action("getData", "Attachments"))
+                        .PageSize(5)
+                    )
+                        )
+                    </div>
+                    <input class="btn btn-outline-primary" value="submit" id="documentsForm" />
+                </form>
+            </div>
+        </text>))
+
+<script type="text/x-kendo-template" id="template">
+    <div id="container">
+        <div class='card'>
+            <img class="card-img-top" src='#=imagePath#' alt='#=lastName #' Title='#=firstName #' />
+            <div class="card-body">
+                <h5 class="card-title">#=firstName # #=lastName #</h5>
+                <dl>
+                    <dt>Phone: #= phone #</dt>
+                    <dt>Job: #= jobTitle #</dt>
+                </dl>
+            </div>
+        </div>
+    </div>
+</script>
+
+<script type="text/javascript">
+    var fName = false;
+    var LName = false;
+    var phone = false;
+    var department = false;
+    $(document).ready(function () {
+        //jQuery code goes here
+
+        // First name must be first letter upperletter
+        checkFirstName();
+
+        // Last name must be first letter upperletter
+        checkLastName();
+
+        // Phone must be in this format 01012345678
+        checkPhone();
+
+        // Message can't be blank
+        // checkDepartment();
+        // console.log(`department = ${department}`);
+
+        // After Form Submitted Validation
+        $("#add").click(function (event) {
+            event.preventDefault();
+            console.log("Photo");
+            console.log($("#photo"));
+            //  console.log($($("#displayPhoto").val()));
+            checkFirstName(); checkLastName(); checkPhone();
+            var form_data = $("#add-form").serializeArray();
+            console.log(form_data);
+            var error_free = true;
+            //for (var input in form_data) {
+            //    if (form_data[input]['name'] == "department_input" || form_data[input]['name'] == "department") continue;
+            //    var element = $(form_data[input]['name']);
+            //    var valid = element.hasClass("valid");
+            //    var error_element = $("span", element.parent());
+            //    if (!fName || !LName || !phone) { error_element.removeClass("error").addClass("error_show"); error_free = false; console.log("In Error_Free become false"); }
+            //    else { error_element.removeClass("error_show").addClass("error"); }
+            //}
+            if (!fName || !LName || !phone) { error_free = false; console.log("In Error_Free become false"); }
+            else { error_free = true; }
+            if (!error_free) {
+                event.preventDefault();
+                alert("please Enter vaild Data ");
+            }
+            else {
+                event.preventDefault();
+                $.ajax({
+                    type: "POST",
+                    url: "/Employees/createEmployee",
+                    data: {
+                        empId: $('#hiddenId').val(),
+                        firstName: $('#firstName').val(),
+                        lastName: $('#lastName').val(),
+                        phone: $('#phone').val(),
+                        jobId: $("#job").data("kendoDropDownList").value(),
+                        imagePath: $("#Imgsrc").val(),
+
+                    },
+                    dataType: "json",
+                    success: function (result) {
+                        $("#grid").data("kendoGrid").dataSource.read();
+                        fName = false;
+                        LName = false;
+                        phone = false;
+                        $('#hiddenId').val(0);
+                        $('#firstName').removeClass("valid").addClass("invalid");
+                        $('#lastName').removeClass("valid").addClass("invalid");
+                        ($("#window").data("kendoWindow")).close();
+                    },
+                    error: function () {
+                        alert("Error while inserting data");
+                    }
+                });
+            }
+        });
+    });
+    var detailsTemplate = kendo.template($("#template").html());
+
+    /**------------------------------------------------------------------------------------------*/
+    function ConfirmDelete() {
+        var response = confirm("Are you sure you want to delete?");
+        if (response)
+            return true;
+        else
+            return false;
+    }
+
+    function Deletefn(e) {
+        e.preventDefault();
+        var dataItem = this.dataItem($(e.currentTarget).closest("tr"));
+        if (ConfirmDelete()) {
+            $.ajax({
+                url: "/Employees/deleteEmployee",
+                type: 'POST',
+                dataType: "json",
+                data: {
+                    empId: dataItem.empId,
+                    firstName: dataItem.firstName,
+                    lastName: dataItem.lastName,
+                    phone: dataItem.phone,
+                    imagePath: dataItem.imagePath,
+                },
+                success: function (result) {
+                    $("#grid").data("kendoGrid").dataSource.read();
+                    alert("done")
+                },
+                error: function () {
+                    alert("Error while deleteing data");
+                }
+            });
+        }
+    }
+    /**------------------------------------------------------------------------------------------*/
+
+    function showDetails(e) {
+        e.preventDefault();
+
+        var dataItem = this.dataItem($(e.currentTarget).closest("tr"));
+        var wnd = $("#Details").data("kendoWindow");
+
+        wnd.content(detailsTemplate(dataItem));
+        wnd.center().open();
+    }
+    /**-----------------------------------addDocument----------------------------**/
+    function addDoc(event) {
+        event.preventDefault();
+        var dataItem = this.dataItem($(event.currentTarget).closest("tr"));
+        console.log(dataItem);
+        console.log(dataItem.empId);
+        $.ajax({
+            url: "Employees/getDocs",
+            type: "POST",
+            data: {
+                employeeId: dataItem.empId,
+            },
+            success: function (result) {
+                console.log(result);
+                $("#documentGrid").data('kendoGrid').dataSource.data(result.Message)
+                $("#documentWindow").parent().css("width", "70%");
+                $("#documentWindow").parent().css("height", "Auto");
+                $("#documentWindow").data('kendoWindow').center().open();
+            },
+            error: function () {
+                alert("Error while get  jobs data");
+            }
+        })
+    }
+
+
+
+
+
+
+
+
+
+    /**--------------------------------------------------------------------------**/
+
+    /**------------------------------------------------------------------------------------------*/
+    $("#open").click(openFN);
+    function openFN(e) {
+        e.preventDefault();
+        try {
+            if (this.dataItem($(e.currentTarget).closest("tr")) != null) {
+                fName = true;
+                LName = true;
+                phone = true;
+                $('#firstName').removeClass("invalid").addClass("valid");
+                $('#lastName').removeClass("invalid").addClass("valid");
+                var data = this.dataItem($(e.currentTarget).closest("tr"));
+                $("#firstName").val(data.firstName);
+                $("#lastName").val(data.lastName);
+                $("#phone").val(data.phone);
+                $("#Imgsrc").val(data.imagePath)
+                $("#displayPhoto").attr("src", data.imagePath);
+                // $("#department").data("kendoComboBox").value(data.depId);
+                $('#hiddenId').val(data.empId);
+            }
+        }
+        catch (err) {
+            fName = false;
+            LName = false;
+            phone = false;
+            $('#hiddenId').val(0);
+            $("#firstName").val('');
+            $("#lastName").val('');
+            $("#phone").val('');
+            $("#Imgsrc").val("../images/profile-default.png");
+            $("#displayPhoto").attr("src", "../images/profile-default.png");
+            // $("#Photo").data("kendoUpload").value([]);
+            $(".k-upload-files.k-reset").find("li").remove();
+
+            // $("#department").data("kendoComboBox").value('');
+
+        } finally {
+            $("#window").parent().css('width', "75%");
+            $("#window").parent().css('height', "Auto");
+            $("#window").data("kendoWindow").center().open();
+        }
+
+    };
+
+
+
+    function checkFirstName() {
+        $('#firstName').on('input', function () {
+            var input = $(this);
+            var is_name = input.val();
+            var re = /^[A-Z]/;
+            if (is_name && (re.test(is_name))) { fName = true; input.removeClass("invalid").addClass("valid"); }
+            else { input.removeClass("valid").addClass("invalid"); fName = false; }
+        });
+    }
+
+    function checkLastName() {
+        $('#lastName').on('input', function () {
+            var input = $(this);
+            is_lastName = input.val();
+            var re = /^[A-Z]/;
+            if (is_lastName && re.test(is_lastName)) { LName = true; input.removeClass("invalid").addClass("valid"); }
+            else { input.removeClass("valid").addClass("invalid"); LName = false; }
+
+        });
+    }
+
+    function checkPhone() {
+        $('#phone').on('input', function () {
+            var input = $(this);
+            var is_phone = input.val()
+            var re = /^01(0|1|2|5)[0-9]{8}$/;
+            if (is_phone && re.test(is_phone)) { phone = true; input.removeClass("invalid").addClass("valid"); }
+            else { input.removeClass("valid").addClass("invalid"); phone = false; }
+        });
+    }
+
+    //function checkDepartment()
+    //{
+    //    $('#department').keyup(function (event) {
+    //        var input = $(this);
+    //        var is_department = $(this).val();
+    //        var re = '/^[A-Z]/'
+    //        if (is_department && re.test(is_department)) { department = true; input.removeClass("invalid").addClass("valid"); }
+    //        else { department = false; input.removeClass("valid").addClass("invalid"); }
+    //    });
+    //}
+
+    $(document).ready(function () {
+        //jQuery code goes here
+
+        // First name must be first letter upperletter
+        checkFirstName();
+
+        // Last name must be first letter upperletter
+        checkLastName();
+
+        // Phone must be in this format 01012345678
+        checkPhone();
+    });
+
+    /* ***************** Browse ****************** */
+    var filesArray = [];
+    const realFileBtn = document.getElementById("real-file");
+    function browse(e) {
+        realFileBtn.click();
+        var dataItem = this.dataItem($(e.currentTarget).closest("tr"));
+        console.log(dataItem);
+        console.log(`document id = ${dataItem.docId}`);
+        realFileBtn.addEventListener("change", function (e) {
+            console.log(realFileBtn.value);
+            var file = e.target.files;
+            console.log(file)
+            if (file.length > 0) {
+                if (window.FormData !== undefined) {
+                    filesArray[dataItem.docId] = file;
+                    //var data = new FormData();
+                    //for (var i = 0; i < file.length; i++) {
+                    //    console.log(` i = ${i}`);
+                    //    data.append("file" + i, file[i]);
+                    //}
+                    //console.log(data);
+                    //$.ajax({
+                    //    type: "POST",
+                    //    url: 'Attachments/UploadFile',
+                    //    contentType: false,
+                    //    processData: false,
+                    //    data: data,
+                    //    success: function (result) {
+                    //        console.log(result);
+                    //        alert(result);
+                    //    },
+                    //    error: function (xhr, status, p3, p4) {
+                    //        var err = "Error " + " " + status + " " + p3 + " " + p4;
+                    //        if (xhr.responseText && xhr.responseText[0] == "{")
+                    //            err = JSON.parse(xhr.responseText).Message;
+                    //        console.log(err);
+                    //    }
+                    //});
+                }
+                else {
+                    alert("This browser doesn't support HTML5 file uploads!");
+                }
+            }
+        }
+        )
+    }
+    /* =============================================== */
+
+    /* ************* documentsForm ******************* */
+    $("#documentsForm").click((event) => {
+        event.preventDefault();
+        console.log("array");
+        console.log(filesArray);
+        for (var i = 0; i < filesArray.length ; i++) {
+            console.log(filesArray[i+1]);
+}
+    });
+    /* *********************************************** */
+</script>
+
+<script>
+
+    function onRemove(e) {
+        $("#displayPhoto").attr("src", "/images/profile-default.png");
+    }
+
+    function onSelect(e) {
+        var file = e.files[0].rawFile;
+        $("#Imgsrc").val("../Images/" + file.name);
+
+        var ext = e.files[0].extension.toLowerCase();
+
+        if (ext == ".jpg" || ext == ".jpeg" || ext == ".png" || ext == ".bmp" || ext == ".gif") {
+            var reader = new FileReader();
+            reader.onloadend = function (res) {
+                $("#displayPhoto").attr("src", this.result); //img id where the photo is to be displayed
+            };
+
+            reader.readAsDataURL(file); //Read the selected photo and display in UI
+
+        }
+        else { //If file extension does not belong to photo display a default image
+            $("#displayPhoto").attr("src", "/images/profile-default.png");
+        }
+    }
+
+</script>
+
+<style type="text/css">
+    #details-container {
+        padding: 10px;
+    }
+
+        #details-container h2 {
+            margin: 0;
+        }
+
+        #details-container em {
+            color: #8c8c8c;
+        }
+
+        #details-container dt {
+            margin: 0;
+            display: inline;
+        }
+
+    body {
+        background-image: url("https://images.pexels.com/photos/953214/pexels-photo-953214.jpeg?cs=srgb&dl=backgrounds-blank-blue-953214.jpg&fm=jpg");
+        background-size: cover;
+    }
+
+    /*#contact label {
+                display: inline-block;
+                width: 100px;
+                text-align: right;
+            }*/
+
+    #contact_submit {
+        padding-left: 100px;
+    }
+
+    #contact div {
+        margin-top: 1em;
+    }
+
+    textarea {
+        vertical-align: top;
+        height: 5em;
+    }
+
+    .error {
+        display: none;
+        margin-left: 10px;
+    }
+
+    .error_show {
+        color: red;
+        margin-left: 10px;
+    }
+
+    input.invalid, textarea.invalid {
+        border: 2px solid red;
+    }
+
+    input.valid, textarea.valid {
+        border: 2px solid green;
+    }
+</style>
+
+<style>
+    .customer-photo {
+        display: inline-block;
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background-size: 32px 35px;
+        background-position: center center;
+        vertical-align: middle;
+        line-height: 32px;
+        box-shadow: inset 0 0 1px #999, inset 0 0 10px rgba(0,0,0,.2);
+        margin-left: 5px;
+    }
+
+    .customer-name {
+        display: inline-block;
+        vertical-align: middle;
+        line-height: 32px;
+        padding-left: 3px;
+    }
+</style>

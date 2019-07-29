@@ -1,0 +1,300 @@
+﻿@{
+    ViewBag.Title = "Departments";
+}
+
+<div class="demo-section k-content">
+    @(Html.Kendo().ButtonGroup()
+       .Name("player")
+       .Items(t =>
+       {
+           t.Add().Text("Employees");
+           t.Add().Text("Units");
+       })
+       .Events(ev => ev.Select("onSelectNavBar"))
+    )
+</div>
+
+<script>
+    function onSelectNavBar(e) {
+        // kendoConsole.log("selected index:" + e.indices);
+        if(e.indices == 0)
+        {
+            window.location.href = "/Employees/index";
+        }
+        else if (e.indices == 1)
+        {
+            window.location.href = "/Units/index";
+        }
+    }
+</script>
+
+<style>
+    .demo-section {
+        text-align: center;
+    }
+</style>
+
+@(Html.Kendo().Grid<RepositoryDP.Model.Departments>()
+        .Name("grid")
+        .Columns(columns =>
+        {
+            columns.Bound(dep => dep.departmentName);
+            columns.Bound(dep => dep.departmentCode);
+            columns.Command(command =>
+            {
+                command.Custom("Delete").Click("Deletefn");
+                command.Custom("Edit").Click("openFN");
+            });
+
+        })
+
+        .ToolBar(toolbar => { toolbar.Custom().Name("add new one").Text("add new one").HtmlAttributes(new { id = "open" }); })
+
+        .Pageable()
+        .Sortable()
+        .Groupable()
+        .DataSource(dataSource => dataSource
+        .Ajax()
+        .PageSize(4)
+        .Model(model =>
+        {
+            model.Id(dep => dep.depId);
+            model.Field(dep => dep.depId).Editable(false);
+            model.Field(dep => dep.departmentName);
+            model.Field(dep => dep.departmentCode);
+        })
+        .Read(read => read.Action("getData", "Departments"))
+    )
+)
+
+@(Html.Kendo().Window()
+.Name("formWindow")
+.Width(630)
+.Height(450)
+.Visible(false)
+.Resizable()
+.Draggable()
+.Title("Add Department")
+.Content(@<text>
+        <form id="add-form">
+            <div class="form-group">
+                <label>Department Name</label>
+                @(Html.Kendo().TextBox()
+                      .Name("departmentName")
+                      .HtmlAttributes(new { @class = "form-control", placeholder = "Department Name" })
+                )
+
+            </div>
+            <div class="form-group">
+                <label>Department Code</label>
+                @(Html.Kendo().TextBox()
+                      .Name("departmentCode")
+                      .HtmlAttributes(new { @class = "form-control", placeholder = "Department Code" })
+                )
+            </div>
+            <input type="hidden" value="0" id="hiddenId" />
+            <input class="btn btn-primary" type="submit" value="submit" id="add" />
+        </form>
+</text>)
+
+.Actions(actions => actions.Refresh().Close())
+)
+
+
+<script>
+    var depName = false;
+    var depCode = false;
+
+    $("#open").click(openFN);
+    function openFN(e) {
+        e.preventDefault();
+        try{
+            if (this.dataItem($(e.currentTarget).closest("tr")) != null) {
+                depCode=true;
+                depName=true;
+                var data = this.dataItem($(e.currentTarget).closest("tr"));
+                $("#departmentName").val(data.departmentName);
+                $("#departmentCode").val(data.departmentCode);
+                $('#hiddenId').val(data.depId);
+            }
+
+        }
+        catch (err) {
+            $("#departmentName").val('');
+            $("#departmentCode").val('');
+            $('#hiddenId').val('0');
+        }
+        finally {
+            $("#formWindow").parent().css('width', "50%");
+            $("#formWindow").parent().css('height', "Auto");
+            $("#formWindow").data("kendoWindow").center().open();
+        }
+
+
+    };
+    $(document).ready(function () {
+        //jQuery code goes here
+
+        // First name must be first letter upperletter
+        checkDepartmenName();
+
+        // Last name must be first letter upperletter
+        checkDepartmentCode();
+
+        // Phone must be in this format 01012345678
+
+        $("#add").click(function (event) {
+
+            checkDepartmenName(); checkDepartmentCode();
+            var form_data = $("#add-form").serializeArray();
+            console.log(form_data);
+            var error_free = true;
+            for (var input in form_data) {
+                var element = $(form_data[input]['name']);
+                var valid = element.hasClass("valid");
+                var error_element = $("span", element.parent());
+                if (!depName || !depCode ) { error_element.removeClass("error").addClass("error_show"); error_free = false; console.log("In Error_Free become false"); }
+                else { error_element.removeClass("error_show").addClass("error"); }
+            }
+            if (!error_free) {
+                event.preventDefault();
+                alert("please Enter vaild Data ");
+            }
+            else {
+                event.preventDefault();
+                    $.ajax({
+                        type: "POST",
+                        url: "/Departments/createDepartment",
+                        data: {
+                            depId: $('#hiddenId').val(),
+                            departmentCode: $('#departmentCode').val(),
+                            departmentName: $('#departmentName').val(),
+                            },
+                        dataType: "json",
+                        success: function (result) {
+                            $("#grid").data("kendoGrid").dataSource.read();
+                            $('#departmentName').removeClass("valid").addClass("invalid");
+                            $('#departmentCode').removeClass("valid").addClass("invalid");
+                            ($("#formWindow").data("kendoWindow")).close();
+                            console.log(result);
+                    },
+                    error: function () {
+                        alert("Error while inserting data");
+                    }
+                });
+            }
+        });
+    });
+    /**------------------------------------------------------------------------------------------*/
+    function ConfirmDelete() {
+        var response = confirm("Are you sure you want to delete?");
+        if (response)
+            return true;
+        else
+            return false;
+    }
+    function Deletefn(e) {
+        e.preventDefault();
+        var dataItem = this.dataItem($(e.currentTarget).closest("tr"));
+        if (ConfirmDelete()) {
+            $.ajax({
+                url: "/Departments/deleteDepartment",
+                type: 'POST',
+                dataType: "json",
+                data: {
+                    depId: dataItem.depId,
+                    departmentCode: dataItem.departmentCode,
+                    departmentName: dataItem.departmentName,
+
+                },
+                success: function (result) {
+                    alert(result.Message)
+                    $("#grid").data("kendoGrid").dataSource.read();
+
+                },
+                error: function () {
+                    alert("Error while deleteing data");
+                }
+            });
+        }
+    }
+
+
+    function checkDepartmenName() {
+        $('#departmentName').on('input', function () {
+            var input = $(this);
+            var is_name = input.val();
+            var re = /^[A-Z]/;
+            if (is_name && (re.test(is_name))) { depName = true; input.removeClass("invalid").addClass("valid"); }
+            else { input.removeClass("valid").addClass("invalid"); depName = false; }
+        });
+    }
+
+    function checkDepartmentCode() {
+        $('#departmentCode').on('input', function () {
+            var input = $(this);
+            is_lastName = input.val();
+            var re = /^[A-Z]/;
+            if (is_lastName && re.test(is_lastName)) { depCode = true; input.removeClass("invalid").addClass("valid"); }
+            else { input.removeClass("valid").addClass("invalid"); depCode = false; }
+
+        });
+    }
+</script>
+
+<style type="text/css">
+    .herfClass a {
+        background-color: purple;
+        border: none;
+        /*color: #FFFFFF;*/
+        padding: 15px 32px;
+        text-align: center;
+        -webkit-transition-duration: 0.4s;
+        transition-duration: 0.4s;
+        text-decoration: none;
+        font-size: 16px;
+        cursor: pointer;
+        display: inline-block;
+    }
+
+    .herfClass {
+        padding: 10px 35px 20px 1320px;
+    }
+
+    #contact label {
+        display: inline-block;
+        width: 100px;
+        text-align: right;
+    }
+
+    #contact_submit {
+        padding-left: 100px;
+    }
+
+    #contact div {
+        margin-top: 1em;
+    }
+
+    textarea {
+        vertical-align: top;
+        height: 5em;
+    }
+
+    .error {
+        display: none;
+        margin-left: 10px;
+    }
+
+    .error_show {
+        color: red;
+        margin-left: 10px;
+    }
+
+    input.invalid, textarea.invalid {
+        border: 2px solid red;
+    }
+
+    input.valid, textarea.valid {
+        border: 2px solid green;
+    }
+</style>
