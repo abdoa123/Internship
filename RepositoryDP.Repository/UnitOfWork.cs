@@ -16,10 +16,6 @@ namespace RepositoryDP.DAL
         /// </summary>
         private ApplicationDb _dbContext;
 
-        public UnitOfWork()
-        {
-        }
-
         /// <summary>
         /// Initializes a new instance of the UnitOfWork class.
         /// </summary>

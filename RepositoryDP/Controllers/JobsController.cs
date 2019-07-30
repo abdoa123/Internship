@@ -5,14 +5,15 @@ using Kendo.Mvc.UI;
 using RepositoryDP.Service;
 using Kendo.Mvc.Extensions;
 using System;
+using RepositoryDP.Repository;
 
 namespace RepositoryDP.Controllers
 {
     public class JobsController : Controller
     {
-      
-       
-        public IJobsService JobService = new JobsService();
+        public static ApplicationDb db = new ApplicationDb();
+        public static IUnitOfWork obj = new UnitOfWork(db);
+        public IJobsService JobService = new JobsService(obj, new JobsRepository());
         // GET: Jobs
         public ActionResult Index()
         {
@@ -20,7 +21,7 @@ namespace RepositoryDP.Controllers
         }
         public ActionResult createJob(Jobs job)
         {
-           bool done = JobService.createJob(job);
+            bool done = JobService.createJob(job);
             return Json(new { Message = done, JsonRequestBehavior.AllowGet });
         }
 

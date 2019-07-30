@@ -20,10 +20,6 @@ namespace RepositoryDP.Service
             _jobsRepository = jobsRepository;
         }
 
-        public JobsService()
-        {
-        }
-
         public bool createJob(Jobs job)
         {
              //Jobs jobFound = db.jobs.Find(job.jobId);

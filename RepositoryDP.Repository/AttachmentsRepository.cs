@@ -17,6 +17,7 @@ namespace RepositoryDP.Repositor
         public AttachmentsRepository()
         {
             _context = new ApplicationDb();
+            _unitOfWork = new UnitOfWork(_context);
         }
 
         public bool add(Attachments attachment)

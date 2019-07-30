@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 namespace RepositoryDP.Model
 {
     [Table("Employees")]
-    public class Employees : AuditableEntity<long>
+    public class Employees
 
     {
         [Key]

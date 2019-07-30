@@ -9,7 +9,7 @@ namespace RepositoryDP.DAL
 {
     public class ApplicationDb : DbContext
     {
-        public ApplicationDb() : base("RepoTask")
+        public ApplicationDb() : base("RepositoryPatternTask")
         {
 
         }
