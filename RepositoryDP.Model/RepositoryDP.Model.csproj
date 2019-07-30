@@ -53,13 +53,9 @@
   <ItemGroup>
     <Compile Include="ApplicationDb.cs" />
     <Compile Include="Attachments.cs" />
-    <Compile Include="AuditableEntity.cs" />
     <Compile Include="Departments.cs" />
     <Compile Include="EmpDocs.cs" />
     <Compile Include="Employees.cs" />
-    <Compile Include="Entity.cs" />
-    <Compile Include="IAuditableEntity.cs" />
-    <Compile Include="IEntity.cs" />
     <Compile Include="Jobs.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Units.cs" />

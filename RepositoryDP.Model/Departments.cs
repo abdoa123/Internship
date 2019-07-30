@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 namespace RepositoryDP.Model
 {
     [Table("Departments")]
-    public class Departments :AuditableEntity<long>
+    public class Departments
     {
         [Key]
         [ScaffoldColumn(false)]
