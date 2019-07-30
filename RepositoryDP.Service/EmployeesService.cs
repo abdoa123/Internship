@@ -8,13 +8,23 @@ using RepositoryDP.Repository;
 using System.IO;
 using System.Web.Hosting;
 using RepositoryDP.DAL;
+using System.Web;
+
 namespace RepositoryDP.Service
 {
     public class EmployeesService : IEmployeesService
     {
         IUnitOfWork _unitOfWork;
         IEmployeesRepository _employeesRepository;
+        IJobsRepository _JobRepo;
 
+        public EmployeesService(IUnitOfWork unitOfWork, IEmployeesRepository employeesRepository,IJobsRepository job)
+        {
+            _unitOfWork = unitOfWork;
+            _employeesRepository = employeesRepository;
+            _JobRepo = job;
+        }
+       
   
 
         //string photoPath = "../Images/profile-default.png";
@@ -28,6 +38,7 @@ namespace RepositoryDP.Service
         {
             if (employee.empId == 0)
             {
+
                 //if (employee.imagePath == null)
                 //{
                 //    employee.imagePath = photoPath;
@@ -37,19 +48,8 @@ namespace RepositoryDP.Service
             }
             else
             {
-                Employees emp = _employeesRepository.getById(employee.empId);
-                emp.firstName = employee.firstName;
-                emp.lastName = employee.lastName;
-                emp.phone = employee.phone;
-                emp.jobId = employee.jobId;
-                string photoName = getPhotoName(emp.imagePath);
-                if (System.IO.File.Exists(Path.Combine(HostingEnvironment.MapPath("~/Images"), photoName)) && emp.imagePath != "../Images/profile-default.png")
-                {
-                    System.IO.File.Delete(Path.Combine(HostingEnvironment.MapPath("~/Images"), photoName));
-                }
-                emp.imagePath = employee.imagePath;
-                _unitOfWork.Commit();
-                return true;
+                return _employeesRepository.UpdateEmployee(employee);
+                
             }
             //db.SaveChanges();
 
@@ -85,9 +85,21 @@ namespace RepositoryDP.Service
 
         public IEnumerable<Jobs> getJobs()
         {
-            return _unitOfWork.jobs.getData();
+            return _JobRepo.getAll();
         }
+        string photoPath = "../Images/profile-default.png";
+        public string Save(HttpPostedFileBase Photo)
+        {
+            if (Photo != null)
+            {
+                string imageName = getPhotoName(Photo.FileName);
+                photoPath = Path.Combine(HostingEnvironment.MapPath("~/Images"), imageName);
+                Photo.SaveAs(photoPath);
 
+                return photoPath;
+            }
+            return "Failed";
+        }
         IEnumerable<Employees> IEmployeesService.getData()
         {
             throw new NotImplementedException();

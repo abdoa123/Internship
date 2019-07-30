@@ -13,7 +13,7 @@ namespace RepositoryDP.Repository
         bool deleteUnit(int unitId);
         int getMaxId();
 
-        IEnumerable<Units> getAll();
+       dynamic getAll();
        
         Units getById(int id);
         bool add(Units unit);

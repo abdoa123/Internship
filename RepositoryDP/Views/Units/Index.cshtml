@@ -176,7 +176,7 @@
                 $('#hiddenId').val(data.unitId);
                 console.log(data.unitId);
                 $.ajax({
-                    url: "Units/getJobs",
+                    url: "/Units/getJobs",
                     type: "POST",
                     data: {
                         unitId: $('#hiddenId').val()

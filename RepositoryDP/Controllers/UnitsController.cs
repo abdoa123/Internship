@@ -27,7 +27,19 @@ namespace RepositoryDP.Controllers
         }
         public ActionResult getData([DataSourceRequest]DataSourceRequest request)
         {
-            return Json(unitService.getData().ToList().ToDataSourceResult(request), JsonRequestBehavior.AllowGet);
+
+            var unitRecord = (from UnitTbl in db.units
+                              join tblDep in db.departments on UnitTbl.departmentId equals tblDep.depId
+                              select new
+                              {
+                                  UnitTbl.unitName,
+                                  UnitTbl.unitCode,
+                                  tblDep.depId,
+                                  tblDep.departmentName,
+                                  UnitTbl.unitId
+                              });
+
+            return Json(unitRecord.ToDataSourceResult(request), JsonRequestBehavior.AllowGet);
 
         }
         [AcceptVerbs(HttpVerbs.Post)]

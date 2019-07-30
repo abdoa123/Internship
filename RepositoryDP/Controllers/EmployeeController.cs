@@ -4,6 +4,9 @@ using System.Web.Mvc;
 using Kendo.Mvc.UI;
 using RepositoryDP.Service;
 using Kendo.Mvc.Extensions;
+using RepositoryDP.Repository;
+using System.Web;
+using System.Linq;
 
 namespace RepositoryDP.Controllers
 {
@@ -11,13 +14,13 @@ namespace RepositoryDP.Controllers
     {
         private string message = "done";
         public static ApplicationDb db = new ApplicationDb(); // using data base
-        public IUnitOfWork obj = new UnitOfWork(db);
-        public IEmployeesService EmpService = new EmployeesService();
+        public static IUnitOfWork obj = new UnitOfWork(db);
+        public IEmployeesService EmpService = new EmployeesService(obj, new EmployeeRepository() , new JobsRepository());
 
         // GET: Employee
         public ActionResult Index()
         {
-            //  ViewBag.Photo = System.IO.File.Exists(photoPath) ? photoPath : "/images/profile-default.png";
+              ViewBag.Photo = System.IO.File.Exists(photoPath) ? photoPath : "/images/profile-default.png";
 
             db.Database.CreateIfNotExists();
             return View();
@@ -25,8 +28,11 @@ namespace RepositoryDP.Controllers
         [AcceptVerbs(HttpVerbs.Post)]
         public ActionResult createEmployee([DataSourceRequest]DataSourceRequest request, Employees employee)
         {
-
-            if (EmpService.createEmployee(employee, "/images/profile-default.png"))
+            if (employee.imagePath == null)
+            {
+                employee.imagePath = photoPath;
+            }
+            if (EmpService.createEmployee(employee, photoPath))
             {
 
                 return Json(new { message, JsonRequestBehavior.AllowGet });
@@ -50,12 +56,31 @@ namespace RepositoryDP.Controllers
             }
 
         }
+        string photoPath = "../Images/profile-default.png";
+
         public ActionResult getData([DataSourceRequest]DataSourceRequest request)
         {
+            var employeeRecord = (from emp in db.employees
+                                  join job in db.jobs on emp.jobId equals job.jobId
+                                  select new
+                                  {
+                                      emp.empId,
+                                      emp.firstName,
+                                      emp.lastName,
+                                      emp.phone,
+                                      jobTitle = job.jobTitle,
+                                      jobId = emp.jobId,
+                                      emp.imagePath
 
-            return Json(EmpService.getData().ToDataSourceResult(request), JsonRequestBehavior.AllowGet);
+                                  });
+            return Json(employeeRecord.ToDataSourceResult(request), JsonRequestBehavior.AllowGet);
+        }
+        public string Save(HttpPostedFileBase Photo)
+        {
+            return EmpService.Save(Photo);
 
         }
+
           public JsonResult getJobs()
         {
             return Json(EmpService.getJobs(), JsonRequestBehavior.AllowGet);

@@ -14,8 +14,9 @@ namespace RepositoryDP.Service
         IUnitOfWork _unitOfWork;
         IUnitsRepository _unitsRepository;
         IJobsRepository _jobRepository ;
+        public static ApplicationDb db = new ApplicationDb();
 
-   
+
         public UnitsService(IUnitOfWork unitOfWork, IUnitsRepository unitsRepository, IJobsRepository jobsRepository)
         {
             _unitOfWork = unitOfWork;
@@ -79,9 +80,9 @@ namespace RepositoryDP.Service
             //return Json(new { Message = message, JsonRequestBehavior.AllowGet });
         
 
-        public IEnumerable<Units> getData()
+        public dynamic getData()
         {
-            var unitRecord = _unitsRepository.getAll();
+          var   unitRecord = _unitsRepository.getAll();
             return unitRecord;
             //return Json(unitRecord.ToDataSourceResult(request), JsonRequestBehavior.AllowGet);
         }

@@ -110,14 +110,7 @@ namespace RepositoryDP.Repository
 
         public IEnumerable<Jobs> getJobs(int id)
         {
-            var jobs = (from jobTable in _context.jobs
-                        where jobTable.jobId == id
-                        select new Jobs
-                        {
-                            jobTitle = jobTable.jobTitle,
-                            jobId = jobTable.jobId,
-                            unitId = jobTable.unitId
-                        });
+            var jobs = _context.jobs.Where(s => s.unitId == id).ToList();
 
             return jobs;
 

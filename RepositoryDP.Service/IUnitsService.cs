@@ -9,7 +9,7 @@ namespace RepositoryDP.Service
 {
     public interface IUnitsService
     {
-        IEnumerable<Units> getData();
+        dynamic getData();
         bool createUnits(Units unit);
         bool deleteUnit(Units unit);
         int getMaxId();

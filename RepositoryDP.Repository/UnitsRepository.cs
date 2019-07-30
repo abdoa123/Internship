@@ -82,7 +82,7 @@ namespace RepositoryDP.Repository
             return true;
         }
 
-        public IEnumerable<Units> getAll()
+        public dynamic getAll()
         {
             var unit = (from UnitTbl in _context.units
                         join tblDep in _context.departments on UnitTbl.departmentId equals tblDep.depId
@@ -93,7 +93,8 @@ namespace RepositoryDP.Repository
                             departmentId = UnitTbl.departmentId,
                             departmentName = tblDep.departmentName,
                             unitId = UnitTbl.unitId
-                        });
+                        }).AsEnumerable();
+
             return unit;
         }
 
