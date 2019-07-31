@@ -98,5 +98,21 @@ namespace RepositoryDP.Controllers
                              });
             return Json(new { Message = documents, JsonRequestBehavior.AllowGet });
         }
+        public JsonResult getImages(int empId)
+        {
+            var docs = (from empDoc in db.empDocs
+                        join doc in db.docs
+                        on empDoc.docId equals doc.docId
+                        where empDoc.empId == empId
+                        select new
+                        {
+                            doc.docId,
+                            docName = doc.docName,
+                            empDoc.docPath,
+                            empDoc.empId
+                        });
+
+            return Json(new { Message = docs, JsonRequestBehavior.AllowGet });
+        }
     }
 }

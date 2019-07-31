@@ -2,13 +2,43 @@
     ViewBag.Title = "Employees";
 }
 
-<div class="btn btn-light" style="margin:1%;">
-    <a href="/Departments">Department</a>
+<div class="demo-section k-content">
+    @(Html.Kendo().ButtonGroup()
+       .Name("player")
+       .Items(t =>
+       {
+           t.Add().Text("Department");
+           t.Add().Text("Units");
+       })
+       .Events(ev => ev.Select("onSelectNavBar"))
+    )
 </div>
 
-<div class="btn btn-light" style="margin:1%;">
-    <a href="/Units">Units</a>
-</div>
+<script>
+    function onSelectNavBar(e) {
+        // kendoConsole.log("selected index:" + e.indices);
+        if (e.indices == 0) {
+            window.location.href = "/Departments/index";
+        }
+        else if (e.indices == 1) {
+            window.location.href = "/Units/index";
+        }
+    }
+</script>
+
+<style>
+    .demo-section {
+        text-align: center;
+    }
+</style>
+
+@*<div class="btn btn-light" style="margin:1%;">
+        <a href="/Departments">Department</a>
+    </div>
+
+    <div class="btn btn-light" style="margin:1%;">
+        <a href="/Units">Units</a>
+    </div>*@
 
 @(Html.Kendo().Grid<RepositoryDP.Model.Employees>()
 .Name("grid")
@@ -26,10 +56,8 @@
         command.Custom("Details").Click("showDetails");
         command.Custom("Edit").Click("openFN");
         command.Custom("Add Document").Click("addDoc");
-        command.Custom("View Document");
+        command.Custom("View Document").Click("DocDetails"); ;
     });
-
-
 })
 .ToolBar(toolbar => { toolbar.Custom().Name("add new one").Text("Add new one").HtmlAttributes(new { id = "open" }); })
 .HtmlAttributes(new { style = "height: 550px;" })
@@ -44,8 +72,6 @@
     .Model(model =>
     {
         model.Id(job => job.jobId);
-
-
     })
     .Read(read => read.Action("getData", "Employee"))
 
@@ -78,8 +104,6 @@
                 .Async(a => a
                             .Save("Save", "Employee")
                             .AutoUpload(true)
-
-
                             )
                 .HtmlAttributes(new { aria_label = "files", @style = "width:300px;" })
                 .Validation(validation =>
@@ -156,6 +180,40 @@
 .Draggable(true)
 .Width(300)
 )
+@(Html.Kendo().Window().Name("DocDetails")
+.Title("Doc Details")
+.Visible(false)
+.Modal(true)
+.Draggable(true)
+.Content(@<text>
+        @(Html.Kendo().Grid<RepositoryDP.Model.EmpDocs>()
+    .Name("DocumentView")
+    .Columns(c =>
+    {
+        c.Bound(d => d.docName).Title("Doc Name");
+        c.Bound(d => d.docPath).Title("Image").ClientTemplate(
+                @"<div class='card' style='width:18rem;'><img class='card-img-top' src=#: docPath #></div>");
+    }))
+</text>)
+)
+
+@*<script>
+        var dataItem = this.dataItem($(e.currentTarget).closest("tr"));
+        console.log(dataItem);
+        $.ajax({
+            url: "Employees/getImages",
+            type: "POST",
+            data: {
+                empId: dataItem.empId
+            },
+            success: function (result) {
+                $("#DocumentView").data('kendoGrid').dataSource.data(result.Message)
+            },
+            error: function () {
+                alert("Error while get  jobs data");
+            }
+        })
+    </script>*@
 
 @(Html.Kendo().Window()
         .Name("documentWindow")
@@ -167,7 +225,7 @@
         .Title("Documents")
         .Content(@<text>
             <div class="container">
-                <form>
+                <form id="formDocumentUpload">
                     <div class="form-group">
                         <input type="file" hidden="hidden" id="real-file" />
                         @(Html.Kendo().Grid<RepositoryDP.Model.Attachments>()
@@ -177,7 +235,7 @@
                         columns.Bound(c => c.docName).Title("Document Name");
                         columns.Command(c =>
                         {
-                            c.Custom("Browse").Click("browse").HtmlAttributes(new { id = "browse" });
+                            c.Custom("Browse").Click("browse");
                         });
                     })
                     .HtmlAttributes(new { style = "height: 480px;", @class = "form-control" })
@@ -199,6 +257,7 @@
                     )
                         )
                     </div>
+                    <input type="hidden" id="empIdForDoc" value="0" />
                     <input class="btn btn-outline-primary" value="submit" id="documentsForm" />
                 </form>
             </div>
@@ -218,6 +277,18 @@
         </div>
     </div>
 </script>
+
+@*<script type="text/x-kendo-template" id="DocTmp">
+        <div id="container">
+            <div class='card'>
+                <img class="card-img-top" src='#=imagePath#' alt='#=lastName #' Title='#=firstName #' />
+                <div class="card-body">
+
+
+                </div>
+            </div>
+        </div>
+    </script>*@
 
 <script type="text/javascript">
     var fName = false;
@@ -297,6 +368,7 @@
         });
     });
     var detailsTemplate = kendo.template($("#template").html());
+    //var docDetailsTemplate = kendo.template($("#DocTmp").html());
 
     /**------------------------------------------------------------------------------------------*/
     function ConfirmDelete() {
@@ -343,40 +415,33 @@
         wnd.content(detailsTemplate(dataItem));
         wnd.center().open();
     }
-    /**-----------------------------------addDocument----------------------------**/
-    function addDoc(event) {
-        event.preventDefault();
-        var dataItem = this.dataItem($(event.currentTarget).closest("tr"));
+
+    function DocDetails(e) {
+        e.preventDefault();
+
+        var dataItem = this.dataItem($(e.currentTarget).closest("tr"));
         console.log(dataItem);
         console.log(dataItem.empId);
         $.ajax({
-            url: "Employee/getDocs",
+            url: "/Employee/getImages",
             type: "POST",
             data: {
-                employeeId: dataItem.empId,
+                empId: dataItem.empId
             },
             success: function (result) {
-                console.log(result);
-                $("#documentGrid").data('kendoGrid').dataSource.data(result.Message)
-                $("#documentWindow").parent().css("width", "70%");
-                $("#documentWindow").parent().css("height", "Auto");
-                $("#documentWindow").data('kendoWindow').center().open();
+                console.log("Get Images");
+                console.log(result.Message);
+                $("#DocumentView").data('kendoGrid').dataSource.data(result.Message)
             },
-            error: function () {
-                alert("Error while get  jobs data");
+            error: function (error) {
+                console.log(error);
+                alert("Error while get images");
             }
         })
+
+        $("#DocDetails").data("kendoWindow").center().open();
     }
 
-
-
-
-
-
-
-
-
-    /**--------------------------------------------------------------------------**/
 
     /**------------------------------------------------------------------------------------------*/
     $("#open").click(openFN);
@@ -409,17 +474,12 @@
             $("#phone").val('');
             $("#Imgsrc").val("../images/profile-default.png");
             $("#displayPhoto").attr("src", "../images/profile-default.png");
-            // $("#Photo").data("kendoUpload").value([]);
             $(".k-upload-files.k-reset").find("li").remove();
-
-            // $("#department").data("kendoComboBox").value('');
-
         } finally {
             $("#window").parent().css('width', "75%");
             $("#window").parent().css('height', "Auto");
             $("#window").data("kendoWindow").center().open();
         }
-
     };
 
 
@@ -479,27 +539,109 @@
         checkPhone();
     });
 
+    /**-----------------------------------addDocument----------------------------**/
+    var data;
+    function addDoc(event) {
+        event.preventDefault();
+        data = new FormData();
+        console.log(data);
+        var dataItem = this.dataItem($(event.currentTarget).closest("tr"));
+        // console.log(dataItem);
+        console.log(dataItem.empId);
+        $("#empIdForDoc").val(dataItem.empId);
+        $.ajax({
+            url: "/Employee/getDocs",
+            type: "POST",
+            data: {
+                employeeId: dataItem.empId,
+            },
+            success: function (result) {
+                console.log(result);
+                $("#documentGrid").data('kendoGrid').dataSource.data(result.Message)
+                $("#documentGrid").data("kendoGrid").dataSource.read();
+                $("#documentWindow").parent().css("width", "70%");
+                $("#documentWindow").parent().css("height", "Auto");
+
+                $("#documentWindow").data('kendoWindow').center().open();
+            },
+            error: function () {
+                alert("Error while get  jobs data");
+            }
+        })
+    }
+
+
+
+
+
+
+
+
+
+    /**--------------------------------------------------------------------------**/
     /* ***************** Browse ****************** */
     var filesArray = [];
     const realFileBtn = document.getElementById("real-file");
     function browse(e) {
+        //e.preventDefault();
         realFileBtn.click();
+        console.log('realFileBtn.value');
+        console.log(realFileBtn.value);
+        console.log('realFileBtn.files');
+        console.log(realFileBtn.files);
+
         var dataItem = this.dataItem($(e.currentTarget).closest("tr"));
         console.log(dataItem);
+
         console.log(`document id = ${dataItem.docId}`);
         realFileBtn.addEventListener("change", function (e) {
+            console.log('realFileBtn.files');
+            console.log(realFileBtn.files);
+            console.log('realFileBtn.value');
             console.log(realFileBtn.value);
-            var file = e.target.files;
-            console.log(file)
-            if (file.length > 0) {
-                if (window.FormData !== undefined) {
-                    filesArray[dataItem.docId] = file;
+            var file = e.target.files[0];
+            // var file = realFileBtn.files[0];
+            console.log(file);
+            //console.log(file[0]);
+            //file.name = "file" + dataItem.docId + ".png";
+            //console.log(file);
 
-                }
-                else {
-                    alert("This browser doesn't support HTML5 file uploads!");
-                }
+            if (window.FormData !== undefined) {
+                //var data = new FormData();
+                console.log("data");
+                //for (var i = 0; i < file.length; i++) {
+                //    //console.log(`==> i = ${i}`);
+                //    data.append("empId=" + $("#empIdForDoc").val() + ",docId=" + dataItem.docId, file[i]);
+                //    console.log(data);
+                //}
+
+                console.log(`file.length = ${file.length}`);
+                data.append("empId=" + $("#empIdForDoc").val() + ",docId=" + dataItem.docId, file);
+                console.log(data);
+                console.log("AJAX");
+                $.ajax({
+                    type: "POST",
+                    url: '/Attachments/UploadFile',
+                    contentType: false, // Not to set any content header
+                    processData: false, // Not to process data
+                   data: data,
+                    success: function (result) {
+                        console.log(result);
+
+                    },
+                    error: function (xhr, status, p3, p4) {
+                        var err = "error " + " " + status + " " + p3 + " " + p4;
+                        if (xhr.responsetext && xhr.responsetext[0] == "{")
+                            err = json.parse(xhr.responsetext).message;
+                        console.log(err);
+                        console.log("Error in browse");
+                    }
+                });
             }
+            else {
+                alert("This browser doesn't support HTML5 file uploads!");
+            }
+
         }
         )
     }
@@ -510,9 +652,33 @@
         event.preventDefault();
         console.log("array");
         console.log(filesArray);
-        for (var i = 0; i < filesArray.length ; i++) {
-            console.log(filesArray[i+1]);
-}
+        //for (var i = 0; i < filesArray.length ; i++) {
+        //    console.log(filesArray[i]);
+        //}
+        var form = $("#formDocumentUpload");
+        console.log(form);
+        console.log(form.serializeArray())
+        $.ajax({
+            type: "POST",
+            url: '/Attachments/UploadFile',
+            contentType: false, // Not to set any content header
+            processData: false, // Not to process data
+            data: data,
+            success: function (result) {
+                console.log(result);
+
+            },
+            error: function (xhr, status, p3, p4) {
+                var err = "error " + " " + status + " " + p3 + " " + p4;
+                if (xhr.responsetext && xhr.responsetext[0] == "{")
+                    err = json.parse(xhr.responsetext).message;
+                console.log(err);
+                console.log("Error in browse");
+            }
+        })
+        $("#documentWindow").data("kendoWindow").close();
+
+
     });
     /* *********************************************** */
 </script>
