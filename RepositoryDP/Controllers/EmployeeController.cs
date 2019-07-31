@@ -85,6 +85,18 @@ namespace RepositoryDP.Controllers
         {
             return Json(EmpService.getJobs(), JsonRequestBehavior.AllowGet);
         }
-
+        public JsonResult getDocs(int employeeId)
+        {
+            //var doc = db.docs.Where(s => s.empId == employeeId).ToList();
+            var documents = (from empDoc in db.empDocs
+                             join doc in db.docs
+                             on empDoc.docId equals doc.docId
+                             where employeeId == empDoc.empId
+                             select new
+                             {
+                                 document = doc,
+                             });
+            return Json(new { Message = documents, JsonRequestBehavior.AllowGet });
         }
+    }
 }

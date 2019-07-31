@@ -10,7 +10,7 @@ using RepositoryDP.Repository;
 
 namespace RepositoryDP.Repositor
 {
-    class AttachmentsRepository : IAttachmentsRepository
+    public class AttachmentsRepository : IAttachmentsRepository
     {
         IUnitOfWork _unitOfWork;
         private readonly ApplicationDb _context;

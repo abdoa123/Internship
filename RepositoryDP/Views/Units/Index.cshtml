@@ -7,7 +7,7 @@
 </div>
 
 <div class="btn btn-light" style="margin:1%;">
-    <a href="/Employees">Employees</a>
+    <a href="/Employee">Employees</a>
 </div>
 
 @(Html.Kendo().Grid<RepositoryDP.Model.Units>()
@@ -222,25 +222,6 @@
     var displayedDataAsJSON;
     var dispayedDataInJSON;
     var savedJobs = [];
-    //$("#addJob").click((event) => {
-    //    event.preventDefault();
-    //    var displayedData = $("#addJobs").data().kendoGrid.dataSource.view();
-    //    displayedDataAsJSON = JSON.stringify(displayedData);
-    //    dispayedDataInJSON = JSON.parse(displayedDataAsJSON);
-    //    var re = /^[A-Z]/;
-    //    savedJobs = [];
-    //    for (var i = 0; i < dispayedDataInJSON.length; i++) {
-    //        dispayedDataInJSON[i].unitId = $('#hiddenId').val();
-    //        if (!(dispayedDataInJSON[i].jobTitle)) {
-    //            dispayedDataInJSON[i].jobTitle = "";
-    //        }
-    //        savedJobs.push(dispayedDataInJSON[i]);
-    //    }
-    //    console.log(dispayedDataInJSON);
-    //    dispayedDataInJSON = savedJobs;
-    //    console.log(dispayedDataInJSON);
-    //});
-
     function addJob () {
         // event.preventDefault();
         var displayedData = $("#addJobs").data().kendoGrid.dataSource.view();

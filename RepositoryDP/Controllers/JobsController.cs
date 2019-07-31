@@ -5,14 +5,18 @@ using Kendo.Mvc.UI;
 using RepositoryDP.Service;
 using Kendo.Mvc.Extensions;
 using System;
+using RepositoryDP.Repository;
 
 namespace RepositoryDP.Controllers
 {
     public class JobsController : Controller
     {
-      
+        public static ApplicationDb db = new ApplicationDb();
+        public static IUnitOfWork obj = new UnitOfWork(db);
+        public IJobsService JobService = new JobsService(obj, new JobsRepository());
+        public IUnitsService unitService = new UnitsService(obj, new UnitsRepository(), new JobsRepository());
+
        
-        public IJobsService JobService = new JobsService();
         // GET: Jobs
         public ActionResult Index()
         {

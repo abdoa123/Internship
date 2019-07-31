@@ -12,7 +12,7 @@ namespace RepositoryDP.Repository
    public  class JobsRepository : IJobsRepository
     {
         //IUnitOfWork _unitOfWork = new IUnitOfWork() ;
-        private readonly ApplicationDb _context;
+        private  ApplicationDb _context;
         public JobsRepository()
         {
             _context = new ApplicationDb();

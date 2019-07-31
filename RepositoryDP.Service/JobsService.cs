@@ -20,26 +20,26 @@ namespace RepositoryDP.Service
             _jobsRepository = jobsRepository;
         }
 
-        public JobsService()
-        {
-        }
+
 
         public bool createJob(Jobs job)
         {
-             //Jobs jobFound = db.jobs.Find(job.jobId);
-                //jobFound.jobTitle = job.jobTitle;
-                //message = "Edit Done";
+            try
+            {
                 Jobs jobFound = _jobsRepository.getById(job.jobId);
                 if (jobFound != null)
                 {
-                    return _jobsRepository.update(job , jobFound);
-                    
+                    return _jobsRepository.update(job, jobFound);
+
                 }
-                else
-                {
-                    
-                    return _jobsRepository.createJob(job);
-                }
+                return _jobsRepository.createJob(job);
+            }
+            catch (Exception)
+            {
+                return _jobsRepository.createJob(job);
+            }
+           
+           
 
         }
        
